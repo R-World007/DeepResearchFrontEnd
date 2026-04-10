@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId}
+    // Fields: uid, email, displayName, photoURL, createdAt
+    
+    // Collection: sessions
+    // Document ID: {sessionId}
+    // Fields: userId, title, createdAt, updatedAt, status
+    
+    // Collection: sessions/{sessionId}/steps
+    // Document ID: {stepId}
+    // Fields: sessionId, type, content, metadata, timestamp, tokenUsage, cost
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSessionOwner(sessionId) {
+      return isAuthenticated() && get(/databases/$(database)/documents/sessions/$(sessionId)).data.userId == request.auth.uid;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['userId', 'title', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200;
+    }
+
+    function isValidStep(data) {
+      return data.keys().hasAll(['sessionId', 'type', 'content', 'timestamp']) &&
+             data.type in ['decomposition', 'search', 'reasoning', 'retrieval', 'summary'] &&
+             data.content is string && data.content.size() < 50000;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.uid == resource.data.uid;
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidSession(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidSession(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      match /steps/{stepId} {
+        allow read: if isSessionOwner(sessionId);
+        allow create: if isSessionOwner(sessionId) && isValidStep(request.resource.data);
+      }
+    }
+  }
+}

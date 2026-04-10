@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "ResearchSession": {
+      "title": "Research Session",
+      "description": "A research thread started by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "completed", "failed"] }
+      },
+      "required": ["userId", "title", "createdAt"]
+    },
+    "ResearchStep": {
+      "title": "Research Step",
+      "description": "A specific step or reasoning block in a research session",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "type": { "type": "string", "enum": ["decomposition", "search", "reasoning", "retrieval", "summary"] },
+        "content": { "type": "string" },
+        "metadata": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "tokenUsage": { "type": "number" },
+        "cost": { "type": "number" }
+      },
+      "required": ["sessionId", "type", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "ResearchSession",
+      "description": "Research sessions"
+    },
+    "/sessions/{sessionId}/steps/{stepId}": {
+      "schema": "ResearchStep",
+      "description": "Steps within a research session"
+    }
+  }
+}
