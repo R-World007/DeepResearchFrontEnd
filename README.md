@@ -1,7 +1,7 @@
 # DeepResearchFrontEnd
 
 A React + Vite frontend for a deep research assistant powered by Gemini and Firebase.
-
+testing
 The app lets users sign in with Google, create research sessions, store session history in Firestore, and step through a simulated research workflow in a clean dashboard UI.
 
 ## Features
